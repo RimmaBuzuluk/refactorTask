@@ -33,28 +33,40 @@ class Parser {
 			}
 			return content;
 		} catch (error) {
-			console.log(`Error ${error}`);
+			console.log(`Помилка при діставанні контенту ${error}`);
 			return [];
 		}
 	}
-	//The Single Responsibility Principle is violated
+
+	//The Single Responsibility Principle was violated
+
 	async saveContent(messages: { message: string; timestamp: string }[], file: string) {
-		const waitGroup: Promise<any>[] = [];
-		for (let i = 0; i < messages.length; i++) {
-			const promise = new Promise<void>(async resolve => {
-				await new Promise<void>(resolve => setTimeout(() => resolve(), Math.random() * 5 * 1000));
-				await mockFetch(file, {
-					body: JSON.stringify({
-						...messages[i],
-						type: messages[i].message.length > 8 ? 'long' : 'short',
-					}),
-					method: 'POST',
-				});
-				console.log(`Saved message - ${messages[i].message} to ${file} as ${messages[i].message.length > 8 ? 'long' : 'short'}`);
-			});
-			waitGroup.push(promise);
+		try {
+			const waitGroup: Promise<any>[] = [];
+			for (let i = 0; i < messages.length; i++) {
+				const message = messages[i];
+				const promise = this.saveMessage(message, file);
+				waitGroup.push(promise);
+			}
+		} catch (error) {
+			console.log('Помилка при збереженні контенту', error);
 		}
-		await Promise.all(waitGroup);
+	}
+
+	private async saveMessage(message: { message: string; timestamp: string }, file: string): Promise<void> {
+		try {
+			await new Promise<void>(resolve => setTimeout(() => resolve(), Math.random() * 5 * 1000));
+			await mockFetch(file, {
+				body: JSON.stringify({
+					...message,
+					type: message.message.length > 8 ? 'long' : 'short',
+				}),
+				method: 'POST',
+			});
+			console.log(`Saved message - ${message.message} to ${file} as ${message.message.length > 8 ? 'long' : 'short'}`);
+		} catch (error) {
+			console.log(`Помилка при збереженні повідомлення у файлі ${file}, та повідомленні ${message}`, error);
+		}
 	}
 }
 

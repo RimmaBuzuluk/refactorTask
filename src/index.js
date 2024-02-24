@@ -1,3 +1,4 @@
+"use strict";
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
         for (var s, i = 1, n = arguments.length; i < n; i++) {
@@ -45,13 +46,12 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var _this = this;
 var mockResponses = {
     'file1.txt': "Hello world! : 2024-02-22 14:35:30 UTC\n  Goodbye world! : 2024-02-22 16:35:30 UTC\n  Hello? : 2024-02-22 08:35:30 UTC\n Hi : 2024-02-22 12:35:30 UTC",
     'file2.txt': "How are you doing ? : 2024-02-22 13:59:30 UTC\n  Fine : 2024-02-22 12:44:30 UTC\n  How about you ? : 2024-02-22 22:35:30 UTC\n  Same : 2024-02-22 07:39:30 UTC",
     'file3.txt': "Have you seen high elves ? : 2022-02-22 14:35:30 UTC\n  HESOYAM : 2023-02-22 14:35:30 UTC\n  BAGUVIX : 2021-02-22 14:35:30 UTC\n  THERE IS NO SPOON : 2020-02-22 14:35:30 UTC",
 };
-var mockFetch = function (filePath, params) { return __awaiter(_this, void 0, void 0, function () {
+var mockFetch = function (filePath, params) { return __awaiter(void 0, void 0, void 0, function () {
     var _a;
     return __generator(this, function (_b) {
         if ((params === null || params === void 0 ? void 0 : params.method) === 'POST')
@@ -62,12 +62,15 @@ var mockFetch = function (filePath, params) { return __awaiter(_this, void 0, vo
 var Parser = /** @class */ (function () {
     function Parser() {
     }
+    //Used try/catch blocks for error handling in method to catch errors and log them.
     Parser.prototype.getContent = function (file) {
         return __awaiter(this, void 0, void 0, function () {
-            var res, messages, content, i, _a, message, timestamp;
+            var res, messages, content, i, _a, message, timestamp, error_1;
             return __generator(this, function (_b) {
                 switch (_b.label) {
-                    case 0: return [4 /*yield*/, mockFetch(file)];
+                    case 0:
+                        _b.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, mockFetch(file)];
                     case 1:
                         res = _b.sent();
                         messages = res.split('\n');
@@ -77,53 +80,66 @@ var Parser = /** @class */ (function () {
                             content.push({ message: message, timestamp: timestamp });
                         }
                         return [2 /*return*/, content];
+                    case 2:
+                        error_1 = _b.sent();
+                        console.log("\u041F\u043E\u043C\u0438\u043B\u043A\u0430 \u043F\u0440\u0438 \u0434\u0456\u0441\u0442\u0430\u0432\u0430\u043D\u043D\u0456 \u043A\u043E\u043D\u0442\u0435\u043D\u0442\u0443 ".concat(error_1));
+                        return [2 /*return*/, []];
+                    case 3: return [2 /*return*/];
                 }
             });
         });
     };
+    //The Single Responsibility Principle was violated
     Parser.prototype.saveContent = function (messages, file) {
         return __awaiter(this, void 0, void 0, function () {
-            var waitGroup, _loop_1, i;
-            var _this = this;
+            var waitGroup, i, message, promise;
+            return __generator(this, function (_a) {
+                try {
+                    waitGroup = [];
+                    for (i = 0; i < messages.length; i++) {
+                        message = messages[i];
+                        promise = this.saveMessage(message, file);
+                        waitGroup.push(promise);
+                    }
+                }
+                catch (error) {
+                    console.log('Помилка при збереженні контенту', error);
+                }
+                return [2 /*return*/];
+            });
+        });
+    };
+    Parser.prototype.saveMessage = function (message, file) {
+        return __awaiter(this, void 0, void 0, function () {
+            var error_2;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        waitGroup = [];
-                        _loop_1 = function (i) {
-                            var promise = new Promise(function (resolve) { return __awaiter(_this, void 0, void 0, function () {
-                                return __generator(this, function (_a) {
-                                    switch (_a.label) {
-                                        case 0: return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(function () { return resolve(); }, Math.random() * 5 * 1000); })];
-                                        case 1:
-                                            _a.sent();
-                                            return [4 /*yield*/, mockFetch(file, {
-                                                    body: JSON.stringify(__assign(__assign({}, messages[i]), { type: messages[i].message.length > 8 ? 'long' : 'short' })),
-                                                    method: 'POST',
-                                                })];
-                                        case 2:
-                                            _a.sent();
-                                            console.log("Saved message - ".concat(messages[i].message, " to ").concat(file, " as ").concat(messages[i].message.length > 8 ? 'long' : 'short'));
-                                            return [2 /*return*/];
-                                    }
-                                });
-                            }); });
-                            waitGroup.push(promise);
-                        };
-                        for (i = 0; i < messages.length; i++) {
-                            _loop_1(i);
-                        }
-                        return [4 /*yield*/, Promise.all(waitGroup)];
+                        _a.trys.push([0, 3, , 4]);
+                        return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(function () { return resolve(); }, Math.random() * 5 * 1000); })];
                     case 1:
                         _a.sent();
-                        return [2 /*return*/];
+                        return [4 /*yield*/, mockFetch(file, {
+                                body: JSON.stringify(__assign(__assign({}, message), { type: message.message.length > 8 ? 'long' : 'short' })),
+                                method: 'POST',
+                            })];
+                    case 2:
+                        _a.sent();
+                        console.log("Saved message - ".concat(message.message, " to ").concat(file, " as ").concat(message.message.length > 8 ? 'long' : 'short'));
+                        return [3 /*break*/, 4];
+                    case 3:
+                        error_2 = _a.sent();
+                        console.log("\u041F\u043E\u043C\u0438\u043B\u043A\u0430 \u043F\u0440\u0438 \u0437\u0431\u0435\u0440\u0435\u0436\u0435\u043D\u043D\u0456 \u043F\u043E\u0432\u0456\u0434\u043E\u043C\u043B\u0435\u043D\u043D\u044F \u0443 \u0444\u0430\u0439\u043B\u0456 ".concat(file, ", \u0442\u0430 \u043F\u043E\u0432\u0456\u0434\u043E\u043C\u043B\u0435\u043D\u043D\u0456 ").concat(message), error_2);
+                        return [3 /*break*/, 4];
+                    case 4: return [2 /*return*/];
                 }
             });
         });
     };
     return Parser;
 }());
-var main = function () { return __awaiter(_this, void 0, void 0, function () {
-    var files, parser, waitGroup, _loop_2, _i, _a, _b, input, output;
+var main = function () { return __awaiter(void 0, void 0, void 0, function () {
+    var files, parser, waitGroup, _loop_1, _i, _a, _b, input, output;
     return __generator(this, function (_c) {
         switch (_c.label) {
             case 0:
@@ -134,7 +150,7 @@ var main = function () { return __awaiter(_this, void 0, void 0, function () {
                 };
                 parser = new Parser();
                 waitGroup = [];
-                _loop_2 = function (input, output) {
+                _loop_1 = function (input, output) {
                     var promise = new Promise(function (resolve) {
                         parser
                             .getContent(input)
@@ -152,7 +168,7 @@ var main = function () { return __awaiter(_this, void 0, void 0, function () {
                 };
                 for (_i = 0, _a = Object.entries(files); _i < _a.length; _i++) {
                     _b = _a[_i], input = _b[0], output = _b[1];
-                    _loop_2(input, output);
+                    _loop_1(input, output);
                 }
                 return [4 /*yield*/, Promise.all(waitGroup)];
             case 1:
