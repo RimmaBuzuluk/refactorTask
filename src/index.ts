@@ -1,3 +1,7 @@
+interface Fetcher {
+	fetch(filePath: string, params?: { body: string; method: string }): Promise<string>;
+}
+
 const mockResponses: Record<string, string> = {
 	'file1.txt': `Hello world! : 2024-02-22 14:35:30 UTC
   Goodbye world! : 2024-02-22 16:35:30 UTC
@@ -13,18 +17,29 @@ const mockResponses: Record<string, string> = {
   THERE IS NO SPOON : 2020-02-22 14:35:30 UTC`,
 };
 
-const mockFetch = async (filePath: string, params?: { body: string; method: string }): Promise<string> => {
-	if (params?.method === 'POST') return '';
-	return mockResponses[filePath] ?? '';
-};
-
+//Used try/catch blocks for error handling in method to catch errors and log them.
+class MockFetcher implements Fetcher {
+	fetch(filePath: string, params?: { body: string; method: string } | undefined): Promise<string> {
+		try {
+			if (params?.method === 'POST') return Promise.resolve('');
+			return Promise.resolve(mockResponses[filePath] ?? '');
+		} catch (error) {
+			console.log(`Error fetching data for ${filePath}:${error}`);
+			return Promise.resolve('');
+		}
+	}
+}
 class Parser {
-	constructor() {}
+	private fetcher: Fetcher;
+
+	constructor(fetcher: Fetcher) {
+		this.fetcher = fetcher;
+	}
 
 	//Used try/catch blocks for error handling in method to catch errors and log them.
 	async getContent(file: string): Promise<{ message: string; timestamp: string }[]> {
 		try {
-			const res = await mockFetch(file);
+			const res = await this.fetcher.fetch(file);
 			const messages = res.split('\n');
 			const content: { message: string; timestamp: string }[] = [];
 			for (let i = 0; i < messages.length; i++) {
@@ -39,31 +54,40 @@ class Parser {
 	}
 
 	//The Single Responsibility Principle was violated
-
+	//Used try/catch blocks for error handling in method to catch errors and log them.
 	async saveContent(messages: { message: string; timestamp: string }[], file: string) {
 		try {
-			const waitGroup: Promise<any>[] = [];
+			const waitGroup: Promise<void>[] = [];
 			for (let i = 0; i < messages.length; i++) {
 				const message = messages[i];
 				const promise = this.saveMessage(message, file);
 				waitGroup.push(promise);
 			}
+			await Promise.all(waitGroup);
 		} catch (error) {
-			console.log('Помилка при збереженні контенту', error);
+			console.log(`Error saving content to ${file}: ${error}`);
 		}
 	}
-
+	//Used try/catch blocks for error handling in method to catch errors and log them.
 	private async saveMessage(message: { message: string; timestamp: string }, file: string): Promise<void> {
 		try {
 			await new Promise<void>(resolve => setTimeout(() => resolve(), Math.random() * 5 * 1000));
-			await mockFetch(file, {
+
+			//save message in file
+			const currentContent = mockResponses[file] || '';
+			const newContent = `${currentContent}\n${message.message} : ${message.timestamp} UTC`;
+			mockResponses[file] = newContent;
+			console.log(`Saved message - ${message.message} to ${file} as ${message.message.length > 8 ? 'long' : 'short'}`);
+
+			//data is added to the server
+			await this.fetcher.fetch(file, {
 				body: JSON.stringify({
 					...message,
 					type: message.message.length > 8 ? 'long' : 'short',
 				}),
 				method: 'POST',
 			});
-			console.log(`Saved message - ${message.message} to ${file} as ${message.message.length > 8 ? 'long' : 'short'}`);
+			// console.log(`Saved message - ${message.message} to ${file} as ${message.message.length > 8 ? 'long' : 'short'}`);
 		} catch (error) {
 			console.log(`Помилка при збереженні повідомлення у файлі ${file}, та повідомленні ${message}`, error);
 		}
@@ -71,31 +95,36 @@ class Parser {
 }
 
 const main = async () => {
-	const files = {
-		'file1.txt': 'out1.txt',
-		'file2.txt': 'out2.txt',
-		'file3.txt': 'out3.txt',
-	};
-	const parser = new Parser();
-	const waitGroup: Promise<any>[] = [];
+	try {
+		const fetcher = new MockFetcher();
+		const parser = new Parser(fetcher);
 
-	for (const [input, output] of Object.entries(files)) {
-		const promise = new Promise<void>(resolve => {
-			parser
-				.getContent(input)
-				.catch(error => {
-					console.error(`Error while getting file ${input} - ${error}`);
-					return [];
-				})
-				.then(messages => parser.saveContent(messages, output))
-				.catch(error => {
-					console.error(`Error while reading file ${input} - ${error}`);
-				})
-				.then(resolve);
-		});
-		waitGroup.push(promise);
+		const files = {
+			'file1.txt': 'out1.txt',
+			'file2.txt': 'out2.txt',
+			'file3.txt': 'out3.txt',
+		};
+
+		const waitGroup: Promise<any>[] = [];
+
+		for (const [input, output] of Object.entries(files)) {
+			const promise = new Promise<void>(resolve => {
+				parser
+					.getContent(input)
+					.then(messages => parser.saveContent(messages, output))
+					.catch(error => {
+						console.error(`Error processing file ${input}: ${error}`);
+					})
+					.then(() => resolve()); // Resolve the promise after completion
+			});
+			waitGroup.push(promise);
+		}
+
+		await Promise.all(waitGroup);
+		console.log('All files processed successfully.');
+	} catch (error) {
+		console.error(`Main function error: ${error}`);
 	}
-	await Promise.all(waitGroup);
 };
 
 main();

@@ -51,16 +51,33 @@ var mockResponses = {
     'file2.txt': "How are you doing ? : 2024-02-22 13:59:30 UTC\n  Fine : 2024-02-22 12:44:30 UTC\n  How about you ? : 2024-02-22 22:35:30 UTC\n  Same : 2024-02-22 07:39:30 UTC",
     'file3.txt': "Have you seen high elves ? : 2022-02-22 14:35:30 UTC\n  HESOYAM : 2023-02-22 14:35:30 UTC\n  BAGUVIX : 2021-02-22 14:35:30 UTC\n  THERE IS NO SPOON : 2020-02-22 14:35:30 UTC",
 };
-var mockFetch = function (filePath, params) { return __awaiter(void 0, void 0, void 0, function () {
-    var _a;
-    return __generator(this, function (_b) {
-        if ((params === null || params === void 0 ? void 0 : params.method) === 'POST')
-            return [2 /*return*/, ''];
-        return [2 /*return*/, (_a = mockResponses[filePath]) !== null && _a !== void 0 ? _a : ''];
-    });
-}); };
+//Used try/catch blocks for error handling in method to catch errors and log them.
+var MockFetcher = /** @class */ (function () {
+    function MockFetcher() {
+    }
+    MockFetcher.prototype.fetch = function (filePath, params) {
+        var _a;
+        try {
+            if ((params === null || params === void 0 ? void 0 : params.method) === 'POST')
+                return Promise.resolve('');
+            return Promise.resolve((_a = mockResponses[filePath]) !== null && _a !== void 0 ? _a : '');
+        }
+        catch (error) {
+            console.log("Error fetching data for ".concat(filePath, ":").concat(error));
+            return Promise.resolve('');
+        }
+    };
+    return MockFetcher;
+}());
+var ContentSaver = /** @class */ (function () {
+    function ContentSaver() {
+    }
+    return ContentSaver;
+}());
 var Parser = /** @class */ (function () {
-    function Parser() {
+    function Parser(fetcher, contentSaver) {
+        this.fetcher = fetcher;
+        this.contentSaver = contentSaver;
     }
     //Used try/catch blocks for error handling in method to catch errors and log them.
     Parser.prototype.getContent = function (file) {
@@ -70,7 +87,7 @@ var Parser = /** @class */ (function () {
                 switch (_b.label) {
                     case 0:
                         _b.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, mockFetch(file)];
+                        return [4 /*yield*/, this.fetcher.fetch(file)];
                     case 1:
                         res = _b.sent();
                         messages = res.split('\n');
@@ -90,28 +107,37 @@ var Parser = /** @class */ (function () {
         });
     };
     //The Single Responsibility Principle was violated
+    //Used try/catch blocks for error handling in method to catch errors and log them.
     Parser.prototype.saveContent = function (messages, file) {
         return __awaiter(this, void 0, void 0, function () {
-            var waitGroup, i, message, promise;
+            var waitGroup, i, message, promise, error_2;
             return __generator(this, function (_a) {
-                try {
-                    waitGroup = [];
-                    for (i = 0; i < messages.length; i++) {
-                        message = messages[i];
-                        promise = this.saveMessage(message, file);
-                        waitGroup.push(promise);
-                    }
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        waitGroup = [];
+                        for (i = 0; i < messages.length; i++) {
+                            message = messages[i];
+                            promise = this.saveMessage(message, file);
+                            waitGroup.push(promise);
+                        }
+                        return [4 /*yield*/, Promise.all(waitGroup)];
+                    case 1:
+                        _a.sent();
+                        return [3 /*break*/, 3];
+                    case 2:
+                        error_2 = _a.sent();
+                        console.log("Error saving content to ".concat(file, ": ").concat(error_2));
+                        return [3 /*break*/, 3];
+                    case 3: return [2 /*return*/];
                 }
-                catch (error) {
-                    console.log('Помилка при збереженні контенту', error);
-                }
-                return [2 /*return*/];
             });
         });
     };
+    //Used try/catch blocks for error handling in method to catch errors and log them.
     Parser.prototype.saveMessage = function (message, file) {
         return __awaiter(this, void 0, void 0, function () {
-            var error_2;
+            var currentContent, newContent, error_3;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -119,17 +145,22 @@ var Parser = /** @class */ (function () {
                         return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(function () { return resolve(); }, Math.random() * 5 * 1000); })];
                     case 1:
                         _a.sent();
-                        return [4 /*yield*/, mockFetch(file, {
+                        currentContent = mockResponses[file] || '';
+                        newContent = "".concat(currentContent, "\n").concat(message.message, " : ").concat(message.timestamp, " UTC");
+                        mockResponses[file] = newContent;
+                        console.log("Saved message - ".concat(message.message, " to ").concat(file, " as ").concat(message.message.length > 8 ? 'long' : 'short'));
+                        //data is added to the server
+                        return [4 /*yield*/, this.fetcher.fetch(file, {
                                 body: JSON.stringify(__assign(__assign({}, message), { type: message.message.length > 8 ? 'long' : 'short' })),
                                 method: 'POST',
                             })];
                     case 2:
+                        //data is added to the server
                         _a.sent();
-                        console.log("Saved message - ".concat(message.message, " to ").concat(file, " as ").concat(message.message.length > 8 ? 'long' : 'short'));
                         return [3 /*break*/, 4];
                     case 3:
-                        error_2 = _a.sent();
-                        console.log("\u041F\u043E\u043C\u0438\u043B\u043A\u0430 \u043F\u0440\u0438 \u0437\u0431\u0435\u0440\u0435\u0436\u0435\u043D\u043D\u0456 \u043F\u043E\u0432\u0456\u0434\u043E\u043C\u043B\u0435\u043D\u043D\u044F \u0443 \u0444\u0430\u0439\u043B\u0456 ".concat(file, ", \u0442\u0430 \u043F\u043E\u0432\u0456\u0434\u043E\u043C\u043B\u0435\u043D\u043D\u0456 ").concat(message), error_2);
+                        error_3 = _a.sent();
+                        console.log("\u041F\u043E\u043C\u0438\u043B\u043A\u0430 \u043F\u0440\u0438 \u0437\u0431\u0435\u0440\u0435\u0436\u0435\u043D\u043D\u0456 \u043F\u043E\u0432\u0456\u0434\u043E\u043C\u043B\u0435\u043D\u043D\u044F \u0443 \u0444\u0430\u0439\u043B\u0456 ".concat(file, ", \u0442\u0430 \u043F\u043E\u0432\u0456\u0434\u043E\u043C\u043B\u0435\u043D\u043D\u0456 ").concat(message), error_3);
                         return [3 /*break*/, 4];
                     case 4: return [2 /*return*/];
                 }
@@ -139,30 +170,29 @@ var Parser = /** @class */ (function () {
     return Parser;
 }());
 var main = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var files, parser, waitGroup, _loop_1, _i, _a, _b, input, output;
+    var fetcher, contentSaver, parser_1, files, waitGroup, _loop_1, _i, _a, _b, input, output, error_4;
     return __generator(this, function (_c) {
         switch (_c.label) {
             case 0:
+                _c.trys.push([0, 2, , 3]);
+                fetcher = new MockFetcher();
+                contentSaver = new ContentSaver();
+                parser_1 = new Parser(fetcher, contentSaver);
                 files = {
                     'file1.txt': 'out1.txt',
                     'file2.txt': 'out2.txt',
                     'file3.txt': 'out3.txt',
                 };
-                parser = new Parser();
                 waitGroup = [];
                 _loop_1 = function (input, output) {
                     var promise = new Promise(function (resolve) {
-                        parser
+                        parser_1
                             .getContent(input)
+                            .then(function (messages) { return parser_1.saveContent(messages, output); })
                             .catch(function (error) {
-                            console.error("Error while getting file ".concat(input, " - ").concat(error));
-                            return [];
+                            console.error("Error processing file ".concat(input, ": ").concat(error));
                         })
-                            .then(function (messages) { return parser.saveContent(messages, output); })
-                            .catch(function (error) {
-                            console.error("Error while reading file ".concat(input, " - ").concat(error));
-                        })
-                            .then(resolve);
+                            .then(function () { return resolve(); }); // Resolve the promise after completion
                     });
                     waitGroup.push(promise);
                 };
@@ -173,7 +203,13 @@ var main = function () { return __awaiter(void 0, void 0, void 0, function () {
                 return [4 /*yield*/, Promise.all(waitGroup)];
             case 1:
                 _c.sent();
-                return [2 /*return*/];
+                console.log('All files processed successfully.');
+                return [3 /*break*/, 3];
+            case 2:
+                error_4 = _c.sent();
+                console.error("Main function error: ".concat(error_4));
+                return [3 /*break*/, 3];
+            case 3: return [2 /*return*/];
         }
     });
 }); };
