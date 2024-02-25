@@ -74,26 +74,28 @@ var Parser = /** @class */ (function () {
     //Used try/catch blocks for error handling in method to catch errors and log them.
     Parser.prototype.getContent = function (file) {
         return __awaiter(this, void 0, void 0, function () {
-            var res, messages, content, i, _a, message, timestamp, error_1;
+            var content, res, messages, i, _a, message, timestamp, error_1;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        _b.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, this.fetcher.fetch(file)];
+                        content = [];
+                        _b.label = 1;
                     case 1:
+                        _b.trys.push([1, 3, , 4]);
+                        return [4 /*yield*/, this.fetcher.fetch(file)];
+                    case 2:
                         res = _b.sent();
                         messages = res.split('\n');
-                        content = [];
                         for (i = 0; i < messages.length; i++) {
                             _a = messages[i].split(':'), message = _a[0], timestamp = _a[1];
                             content.push({ message: message, timestamp: timestamp });
                         }
-                        return [2 /*return*/, content];
-                    case 2:
+                        return [3 /*break*/, 4];
+                    case 3:
                         error_1 = _b.sent();
                         console.log("\u041F\u043E\u043C\u0438\u043B\u043A\u0430 \u043F\u0440\u0438 \u0434\u0456\u0441\u0442\u0430\u0432\u0430\u043D\u043D\u0456 \u043A\u043E\u043D\u0442\u0435\u043D\u0442\u0443 ".concat(error_1));
-                        return [2 /*return*/, []];
-                    case 3: return [2 /*return*/];
+                        return [3 /*break*/, 4];
+                    case 4: return [2 /*return*/, content];
                 }
             });
         });

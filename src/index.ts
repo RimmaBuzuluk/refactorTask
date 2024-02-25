@@ -37,19 +37,18 @@ class Parser {
 
 	//Used try/catch blocks for error handling in method to catch errors and log them.
 	async getContent(file: string): Promise<{ message: string; timestamp: string }[]> {
+		const content: { message: string; timestamp: string }[] = [];
 		try {
 			const res = await this.fetcher.fetch(file);
 			const messages = res.split('\n');
-			const content: { message: string; timestamp: string }[] = [];
 			for (let i = 0; i < messages.length; i++) {
 				const [message, timestamp] = messages[i].split(':');
 				content.push({ message, timestamp });
 			}
-			return content;
 		} catch (error) {
 			console.log(`Помилка при діставанні контенту ${error}`);
-			return [];
 		}
+		return content;
 	}
 
 	//The Single Responsibility Principle was violated
