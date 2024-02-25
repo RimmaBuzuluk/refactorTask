@@ -58,9 +58,7 @@ var MockFetcher = /** @class */ (function () {
     MockFetcher.prototype.fetch = function (filePath, params) {
         var _a;
         try {
-            if ((params === null || params === void 0 ? void 0 : params.method) === 'POST')
-                return Promise.resolve('');
-            return Promise.resolve((_a = mockResponses[filePath]) !== null && _a !== void 0 ? _a : '');
+            return (params === null || params === void 0 ? void 0 : params.method) === 'POST' ? Promise.resolve('') : Promise.resolve((_a = mockResponses[filePath]) !== null && _a !== void 0 ? _a : '');
         }
         catch (error) {
             console.log("Error fetching data for ".concat(filePath, ":").concat(error));
@@ -69,15 +67,9 @@ var MockFetcher = /** @class */ (function () {
     };
     return MockFetcher;
 }());
-var ContentSaver = /** @class */ (function () {
-    function ContentSaver() {
-    }
-    return ContentSaver;
-}());
 var Parser = /** @class */ (function () {
-    function Parser(fetcher, contentSaver) {
+    function Parser(fetcher) {
         this.fetcher = fetcher;
-        this.contentSaver = contentSaver;
     }
     //Used try/catch blocks for error handling in method to catch errors and log them.
     Parser.prototype.getContent = function (file) {
@@ -170,14 +162,13 @@ var Parser = /** @class */ (function () {
     return Parser;
 }());
 var main = function () { return __awaiter(void 0, void 0, void 0, function () {
-    var fetcher, contentSaver, parser_1, files, waitGroup, _loop_1, _i, _a, _b, input, output, error_4;
+    var fetcher, parser_1, files, waitGroup, _loop_1, _i, _a, _b, input, output, error_4;
     return __generator(this, function (_c) {
         switch (_c.label) {
             case 0:
                 _c.trys.push([0, 2, , 3]);
                 fetcher = new MockFetcher();
-                contentSaver = new ContentSaver();
-                parser_1 = new Parser(fetcher, contentSaver);
+                parser_1 = new Parser(fetcher);
                 files = {
                     'file1.txt': 'out1.txt',
                     'file2.txt': 'out2.txt',

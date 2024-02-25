@@ -21,8 +21,7 @@ const mockResponses: Record<string, string> = {
 class MockFetcher implements Fetcher {
 	fetch(filePath: string, params?: { body: string; method: string } | undefined): Promise<string> {
 		try {
-			if (params?.method === 'POST') return Promise.resolve('');
-			return Promise.resolve(mockResponses[filePath] ?? '');
+			return params?.method === 'POST' ? Promise.resolve('') : Promise.resolve(mockResponses[filePath] ?? '');
 		} catch (error) {
 			console.log(`Error fetching data for ${filePath}:${error}`);
 			return Promise.resolve('');
